@@ -403,12 +403,21 @@
             document.getElementById('disclaimerBox').style.display = 'none';
         }
 
-        const apiURL = 'https://raw.githubusercontent.com/drmlive/fancode-live-events/main/fancode.json';
+        // Fancode's own CDN (both the paid "pdlive" tier and the free
+        // "flive" tier) rejects unsigned/unauthenticated requests with a
+        // 403 — confirmed via curl and real headless Chrome. This "fan.json"
+        // feed instead publishes cnptv_cdn, a link to a third-party mirror
+        // (fancode-cdn.pages.dev) that has valid signed access to Fancode's
+        // CDN and serves it back out with proper CORS headers.
+        const apiURL = 'https://raw.githubusercontent.com/kajju027/Fancode-Events-Json/main/fan.json';
         const container = document.getElementById('matches');
         const playerWrapper = document.getElementById('player-wrapper');
         const playerIframe = document.getElementById('dynamic-player');
 
-        // 🔹 use internal player with ?stream=
+        // Load directly via our own hls.js player, no server-side proxy —
+        // a Cloudflare Worker fetching the manifest server-side gets 403'd
+        // (likely datacenter-IP blocked); a real browser fetching it
+        // directly does not have that problem.
         const proxyBaseURL = './player.html?stream=';
 
         let allMatches = [];
@@ -416,7 +425,9 @@
         let currentFilter = 'all';
 
         function getStreamLink(m) {
-            return m.dai_url || m.url || (m.stream && m.stream.url) || null;
+            if (m.cnptv_cdn) return m.cnptv_cdn;
+            const s = m.streams || {};
+            return s.fancode_cdn || s.primary || m.dai_url || m.url || null;
         }
 
         function playMatch(link) {
@@ -457,17 +468,18 @@
                 const div = document.createElement('div');
                 div.className = 'match-item';
 
-                const img = m.src || 'https://via.placeholder.com/400x225?text=No+Image';
+                const img = m.image || m.src || 'https://via.placeholder.com/400x225?text=No+Image';
                 const status = (m.status || '').toUpperCase();
                 const statusClass = status === 'LIVE' ? '' : 'upcoming';
                 const link = getStreamLink(m);
                 const has = !!link;
+                const title = m.tournament ? `${m.title} (${m.tournament})` : (m.title || 'Match Title');
 
                 div.innerHTML = `
-      <span class="badge badge-category">${m.event_category || 'Other'}</span>
+      <span class="badge badge-category">${m.category || m.event_category || 'Other'}</span>
       <span class="badge badge-status ${statusClass}">${status || 'N/A'}</span>
-      <img src="${img}" alt="${(m.title || 'Match').replace(/"/g, '')}">
-      <h3>${m.title || 'Match Title'}</h3>
+      <img src="${img}" alt="${title.replace(/"/g, '')}">
+      <h3>${title}</h3>
       <button class="stream-button" ${has ? '' : 'disabled'}>
         ${has ? 'Watch Now' : 'No Stream'}
       </button>

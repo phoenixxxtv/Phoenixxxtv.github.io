@@ -3,61 +3,70 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>@allinone_reborn</title>
+  <meta name="referrer" content="no-referrer"/>
+  <title>PhoenixxxTv Fancode Player</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3.6.12/dist/plyr.css"/>
   <style>
     html, body {
       margin: 0;
       height: 100%;
-      background: black;
-      display: flex;
-      flex-direction: column;
-    }
-    #banner-top, #banner-bottom {
-      display: flex;
-      justify-content: center;
-      align-items: center;
       background: #000;
-      padding: 5px 0;
-      width: 100%;
-      min-height: 50px;
     }
-    #player {
-      flex: 1;
-      width: 100%;
-      max-width: 100%;
-      background: black;
-      border: none;
-    }
-    @media (max-width: 768px) {
-      #player {
-        height: 60vh;
-      }
-    }
-    @media (min-width: 769px) {
-      #player {
-        height: 80vh;
-      }
+    video { width: 100%; height: 100%; max-width: 100%; background: #000; }
+    .plyr { height: 100%; }
+    .error-message {
+      color: #fff;
+      text-align: center;
+      margin-top: 40px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 1.1rem;
+      padding: 0 20px;
     }
   </style>
-
 </head>
 <body>
 
-  <!-- 🎬 Player -->
-  <iframe id="player" allow="autoplay; fullscreen" allowfullscreen></iframe>
+  <video id="player" controls autoplay playsinline style="background:#000"></video>
+  <div id="error" class="error-message" style="display:none;"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/plyr@3.6.12/dist/plyr.min.js"></script>
   <script>
-    // get original stream URL from query ?stream=
-    const raw = new URLSearchParams(window.location.search).get("stream");
+    const video = document.getElementById('player');
+    const errorDiv = document.getElementById('error');
+    const streamUrl = new URLSearchParams(window.location.search).get('stream');
 
-    // ✅ the worker returns a full standalone player page (hls.js based),
-    // not a raw .m3u8 — so it must be iframed, not fed to a player as a media file
-    const streamUrl = "https://my-hls-worker.lakshman-n-hlc0596.workers.dev/ios=" + encodeURIComponent(raw);
+    function fail(msg) {
+      video.style.display = 'none';
+      errorDiv.style.display = 'block';
+      errorDiv.textContent = msg;
+    }
 
-    if (raw) {
-      document.getElementById('player').src = streamUrl;
+    if (!streamUrl) {
+      fail('No stream link provided.');
+    } else if (window.Hls && Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(streamUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.ERROR, function (event, data) {
+        if (data && data.fatal) {
+          fail('Could not load video. Please try again later.');
+          hls.destroy();
+        }
+      });
+      hls.on(Hls.Events.MANIFEST_PARSED, function () {
+        window.player = new Plyr(video, {
+          controls: ['play-large', 'play', 'mute', 'volume', 'settings', 'fullscreen'],
+        });
+        video.play();
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = streamUrl;
+      video.addEventListener('error', () => fail('Could not load video. Please try again later.'));
+      video.addEventListener('loadedmetadata', () => video.play());
+      window.player = new Plyr(video, { controls: ['play-large', 'play', 'mute', 'volume', 'settings', 'fullscreen'] });
     } else {
-      document.body.innerHTML = '<p style="color:#fff;text-align:center;margin-top:40px;">No stream link provided.</p>';
+      fail('Your browser does not support HLS playback.');
     }
   </script>
 </body>
