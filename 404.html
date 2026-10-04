@@ -7,8 +7,17 @@
   <script>
     var path = window.location.pathname;
     if (path.startsWith('/luxflix')) {
-      document.write('<script type="module" crossorigin src="/luxflix/assets/index-BBMemu2X.js"><\\/script>');
-      document.write('<link rel="stylesheet" crossorigin href="/luxflix/assets/index-yEjXJiic.css">');
+      var s = document.createElement('script');
+      s.type = 'module';
+      s.crossOrigin = 'anonymous';
+      s.src = '/luxflix/assets/index-BBMemu2X.js';
+      document.head.appendChild(s);
+      
+      var l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.crossOrigin = 'anonymous';
+      l.href = '/luxflix/assets/index-yEjXJiic.css';
+      document.head.appendChild(l);
     } else {
       window.location.replace('/');
     }
