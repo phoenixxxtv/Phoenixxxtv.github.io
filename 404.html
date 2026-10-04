@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phoenixxx Tv</title>
+  <script>
+    var path = window.location.pathname;
+    if (path.startsWith('/luxflix')) {
+      document.write('<script type="module" crossorigin src="/luxflix/assets/index-BBMemu2X.js"><\\/script>');
+      document.write('<link rel="stylesheet" crossorigin href="/luxflix/assets/index-yEjXJiic.css">');
+    } else {
+      window.location.replace('/');
+    }
+  </script>
+</head>
+<body style="background-color: #121212; margin: 0;">
+  <div id="root"></div>
+</body>
+</html>
